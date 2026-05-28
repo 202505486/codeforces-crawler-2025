@@ -28,6 +28,8 @@ typedef struct {
     int contest_count;
     int recent_180_count;
     int recent_180_max;
+    int solved_count;
+    int upsolve_count;
 } UserStats;
 
 // curl 回调函数
@@ -118,56 +120,8 @@ void get_rating_color(int rating, char *color) {
 int generate_user_summary(const char *handle, FILE *out) {
     int success = 0;
     
-    fprintf(out, "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n");
-    fprintf(out, "    <meta charset=\"UTF-8\">\n");
-    fprintf(out, "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
-    fprintf(out, "    <title>%s - Codeforces Contest Summary</title>\n", handle);
+    // ============ 第一步：先获取所有数据 ============
     
-    // 引入 eChart
-    fprintf(out, "    <script>\n");
-    fprintf(out, "        window.echartsLoaded = false;\n");
-    fprintf(out, "        function checkECharts() {\n");
-    fprintf(out, "            if (typeof echarts !== 'undefined') {\n");
-    fprintf(out, "                window.echartsLoaded = true;\n");
-    fprintf(out, "                if (typeof initCharts === 'function') {\n");
-    fprintf(out, "                    initCharts();\n");
-    fprintf(out, "                }\n");
-    fprintf(out, "            }\n");
-    fprintf(out, "        }\n");
-    fprintf(out, "    </script>\n");
-    fprintf(out, "    <script src=\"ku/echarts/echarts.min.js\" onload=\"checkECharts()\" onerror=\"console.log('ECharts loading failed')\"></script>\n");
-    
-    fprintf(out, "    <style>\n");
-    fprintf(out, "        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }\n");
-    fprintf(out, "        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }\n");
-    fprintf(out, "        .user-card { display: flex; align-items: center; gap: 20px; margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; }\n");
-    fprintf(out, "        .avatar { width: 100px; height: 100px; border-radius: 50%%; }\n");
-    fprintf(out, "        h1 { color: #333; }\n");
-    fprintf(out, "        h2 { margin: 0; }\n");
-    fprintf(out, "        h3 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 10px; }\n");
-    fprintf(out, "        .contest-stats ul { list-style: none; padding: 0; }\n");
-    fprintf(out, "        .contest-stats li { padding: 8px 0; border-bottom: 1px solid #eee; }\n");
-    fprintf(out, "        table { width: 100%%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }\n");
-    fprintf(out, "        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }\n");
-    fprintf(out, "        th { background: #5c7cfa; color: white; font-weight: bold; }\n");
-    fprintf(out, "        tr:nth-child(even) { background: #f8fafc; }\n");
-    fprintf(out, "        tr:nth-child(odd) { background: #ffffff; }\n");
-    fprintf(out, "        tr:hover { background: #e0e7ff; }\n");
-    fprintf(out, "        .positive { color: green; font-weight: bold; }\n");
-    fprintf(out, "        .negative { color: red; font-weight: bold; }\n");
-    fprintf(out, "        .chart-section { margin-top: 30px; }\n");
-    fprintf(out, "        #trendChart, #histChart { width: 100%%; height: 400px; }\n");
-    fprintf(out, "        .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n");
-    fprintf(out, "        .back-link:hover { background: #0056b3; }\n");
-    fprintf(out, "        .filter-buttons { margin-bottom: 15px; }\n");
-    fprintf(out, "        .filter-btn { padding: 6px 12px; margin-right: 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; }\n");
-    fprintf(out, "        .filter-btn.active { background: #5c7cfa; color: white; border-color: #5c7cfa; }\n");
-    fprintf(out, "    </style>\n");
-    fprintf(out, "</head>\n");
-    fprintf(out, "<body>\n");
-    fprintf(out, "<div class=\"container\">\n");
-    fprintf(out, "    <a href=\"index.html\" class=\"back-link\">← 返回用户列表</a>\n");
-
     // 获取用户信息
     char url[MAX_URL];
     snprintf(url, sizeof(url), "https://codeforces.com/api/user.info?handles=%s", handle);
@@ -178,25 +132,6 @@ int generate_user_summary(const char *handle, FILE *out) {
         parse_user_info(user_data, &stats);
         free(user_data);
     }
-
-    // 用户卡片
-    fprintf(out, "    <div class=\"user-card\">\n");
-    fprintf(out, "        <img src=\"%s\" alt=\"Avatar\" class=\"avatar\">\n", stats.titlePhoto);
-    fprintf(out, "        <div>\n");
-    
-    char handle_color[16];
-    get_rating_color(stats.rating, handle_color);
-    fprintf(out, "            <h1 style=\"color: %s;\">%s</h1>\n", handle_color, stats.handle);
-    fprintf(out, "            <h2>%s</h2>\n", stats.rank);
-    fprintf(out, "            <p>当前等级分: <strong style=\"color: %s;\">%d</strong></p>\n", handle_color, stats.rating);
-    fprintf(out, "        </div>\n");
-    fprintf(out, "    </div>\n");
-
-    // 等级分趋势折线图
-    fprintf(out, "    <div class=\"chart-section\">\n");
-    fprintf(out, "        <h3>Rating Trend</h3>\n");
-    fprintf(out, "        <div id=\"trendChart\"></div>\n");
-    fprintf(out, "    </div>\n");
 
     // 获取比赛历史
     snprintf(url, sizeof(url), "https://codeforces.com/api/user.rating?handle=%s", handle);
@@ -221,6 +156,8 @@ int generate_user_summary(const char *handle, FILE *out) {
         contest_id_to_idx[i] = -1;
     }
     
+    // ============ 第二步：处理比赛历史数据，计算统计信息 ============
+    
     if (result) {
         cJSON *root = cJSON_Parse(result);
         if (root) {
@@ -229,13 +166,13 @@ int generate_user_summary(const char *handle, FILE *out) {
                 int total_contests = cJSON_GetArraySize(result_array);
                 
                 // 统计数据
-                int max_rating = 0;
+                int max_rating = stats.max_rating;
                 long long now = time(NULL);
                 long long days_180 = 180LL * 24 * 3600;
                 int recent_180_count = 0;
                 int recent_180_max = 0;
 
-                // 先收集所有比赛信息
+                // 先收集所有比赛信息并计算统计数据
                 for (int i = 0; i < total_contests && i < max_contests; i++) {
                     cJSON *contest = cJSON_GetArrayItem(result_array, i);
                     if (!contest) continue;
@@ -243,6 +180,7 @@ int generate_user_summary(const char *handle, FILE *out) {
                     cJSON *contest_id = cJSON_GetObjectItem(contest, "contestId");
                     cJSON *timestamp = cJSON_GetObjectItem(contest, "ratingUpdateTimeSeconds");
                     cJSON *contest_name = cJSON_GetObjectItem(contest, "contestName");
+                    cJSON *new_rating = cJSON_GetObjectItem(contest, "newRating");
                     
                     if (contest_id && timestamp) {
                         contest_ids[contest_count] = contest_id->valueint;
@@ -255,8 +193,220 @@ int generate_user_summary(const char *handle, FILE *out) {
                         }
                         contest_count++;
                     }
+                    
+                    // 计算统计数据
+                    if (new_rating) {
+                        if (new_rating->valueint > max_rating) {
+                            max_rating = new_rating->valueint;
+                        }
+                        if (timestamp && (now - timestamp->valueint) <= days_180) {
+                            recent_180_count++;
+                            if (new_rating->valueint > recent_180_max) {
+                                recent_180_max = new_rating->valueint;
+                            }
+                        }
+                    }
                 }
                 
+                // 更新stats中的统计数据
+                stats.max_rating = max_rating;
+                stats.recent_180_count = recent_180_count;
+                stats.recent_180_max = recent_180_max;
+                
+                // ============ 第二步.5：获取提交记录并统计通过题目和补题数量 ============
+                int solved_count = 0;
+                int upsolve_count = 0;
+                
+                // 使用哈希表来跟踪已通过的题目（按contestId+index唯一标识）
+                int max_problems = 10000;
+                long long *all_problems = calloc(max_problems, sizeof(long long));
+                int all_problem_count = 0;
+                
+                // 分批获取提交记录（每次最多1000条，最多获取8000条）
+                int max_requests = 8;
+                
+                for (int req = 0; req < max_requests; req++) {
+                    int from = req * 1000 + 1;
+                    snprintf(url, sizeof(url), "https://codeforces.com/api/user.status?handle=%s&from=%d&count=1000", handle, from);
+                    char *submissions = fetch_url(url);
+                    
+                    if (!submissions) {
+                        break;
+                    }
+                    
+                    cJSON *root = cJSON_Parse(submissions);
+                    if (!root) {
+                        free(submissions);
+                        break;
+                    }
+                    
+                    cJSON *result_array = cJSON_GetObjectItem(root, "result");
+                    if (!result_array || !cJSON_IsArray(result_array)) {
+                        cJSON_Delete(root);
+                        free(submissions);
+                        break;
+                    }
+                    
+                    int batch_size = cJSON_GetArraySize(result_array);
+                    if (batch_size == 0) {
+                        cJSON_Delete(root);
+                        free(submissions);
+                        break;
+                    }
+                    
+                    for (int i = 0; i < batch_size; i++) {
+                        cJSON *sub = cJSON_GetArrayItem(result_array, i);
+                        if (!sub) continue;
+                        
+                        cJSON *verdict = cJSON_GetObjectItem(sub, "verdict");
+                        cJSON *problem = cJSON_GetObjectItem(sub, "problem");
+                        cJSON *time = cJSON_GetObjectItem(sub, "creationTimeSeconds");
+                        
+                        if (!verdict || !verdict->valuestring || strcmp(verdict->valuestring, "OK") != 0) continue;
+                        if (!problem) continue;
+                        
+                        cJSON *contest_id = cJSON_GetObjectItem(problem, "contestId");
+                        cJSON *index = cJSON_GetObjectItem(problem, "index");
+                        
+                        if (!contest_id || !index) continue;
+                        
+                        // 创建唯一标识符
+                        long long problem_id = ((long long)contest_id->valueint << 32);
+                        for (int j = 0; index->valuestring[j] && j < 4; j++) {
+                            problem_id = (problem_id << 8) | (index->valuestring[j] & 0xFF);
+                        }
+                        
+                        // 检查是否已经统计过这道题
+                        int found = 0;
+                        for (int p = 0; p < all_problem_count; p++) {
+                            if (all_problems[p] == problem_id) {
+                                found = 1;
+                                break;
+                            }
+                        }
+                        
+                        // 检查是否是补题（提交时间晚于比赛时间）
+                        int submission_time = time ? time->valueint : 0;
+                        int is_upsolve = 0;
+                        int contest_idx = contest_id_to_idx[contest_id->valueint];
+                        
+                        if (contest_idx >= 0 && submission_time > contest_times[contest_idx]) {
+                            is_upsolve = 1;
+                        }
+                        
+                        // 如果是新题目，添加到列表并统计
+                        if (!found && all_problem_count < max_problems) {
+                            all_problems[all_problem_count] = problem_id;
+                            all_problem_count++;
+                            solved_count++;
+                            if (is_upsolve) {
+                                upsolve_count++;
+                            }
+                        }
+                    }
+                    
+                    cJSON_Delete(root);
+                    free(submissions);
+                    
+                    if (batch_size < 1000) {
+                        break;
+                    }
+                }
+                
+                free(all_problems);
+                
+                // 更新stats中的统计数据
+                stats.solved_count = solved_count;
+                stats.upsolve_count = upsolve_count;
+                
+                // ============ 第三步：生成HTML页面 ============
+                
+                fprintf(out, "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n");
+                fprintf(out, "    <meta charset=\"UTF-8\">\n");
+                fprintf(out, "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
+                fprintf(out, "    <title>%s - Codeforces Contest Summary</title>\n", handle);
+                
+                // 引入 eChart
+                fprintf(out, "    <script>\n");
+                fprintf(out, "        window.echartsLoaded = false;\n");
+                fprintf(out, "        function checkECharts() {\n");
+                fprintf(out, "            if (typeof echarts !== 'undefined') {\n");
+                fprintf(out, "                window.echartsLoaded = true;\n");
+                fprintf(out, "                if (typeof initCharts === 'function') {\n");
+                fprintf(out, "                    initCharts();\n");
+                fprintf(out, "                }\n");
+                fprintf(out, "            }\n");
+                fprintf(out, "        }\n");
+                fprintf(out, "    </script>\n");
+                fprintf(out, "    <script src=\"ku/echarts/echarts.min.js\" onload=\"checkECharts()\" onerror=\"console.log('ECharts loading failed')\"></script>\n");
+                
+                fprintf(out, "    <style>\n");
+                fprintf(out, "        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }\n");
+                fprintf(out, "        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }\n");
+                fprintf(out, "        .user-card { display: flex; align-items: center; gap: 25px; margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); border-radius: 15px; color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }\n");
+                fprintf(out, "        .avatar { width: 110px; height: 110px; border-radius: 50%%; border: 4px solid rgba(255,255,255,0.5); }\n");
+                fprintf(out, "        .user-info { flex: 1; }\n");
+                fprintf(out, "        .user-info h1 { margin: 0 0 8px 0; font-size: 28px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }\n");
+                fprintf(out, "        .user-info h2 { margin: 0 0 10px 0; font-size: 18px; font-weight: normal; opacity: 0.9; }\n");
+                fprintf(out, "        .user-info p { margin: 0; font-size: 16px; }\n");
+                fprintf(out, "        .user-stats { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; background: rgba(255,255,255,0.15); padding: 15px 20px; border-radius: 10px; backdrop-filter: blur(10px); }\n");
+                fprintf(out, "        .stat-item { display: flex; flex-direction: column; align-items: center; }\n");
+                fprintf(out, "        .stat-label { font-size: 11px; opacity: 0.8; margin-bottom: 4px; }\n");
+                fprintf(out, "        .stat-value { font-size: 18px; font-weight: bold; }\n");
+                fprintf(out, "        h1 { color: #333; }\n");
+                fprintf(out, "        h2 { margin: 0; }\n");
+                fprintf(out, "        h3 { color: #555; border-bottom: 2px solid #007bff; padding-bottom: 10px; }\n");
+                fprintf(out, "        .contest-stats ul { list-style: none; padding: 0; }\n");
+                fprintf(out, "        .contest-stats li { padding: 8px 0; border-bottom: 1px solid #eee; }\n");
+                fprintf(out, "        table { width: 100%%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }\n");
+                fprintf(out, "        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }\n");
+                fprintf(out, "        th { background: #5c7cfa; color: white; font-weight: bold; }\n");
+                fprintf(out, "        tr:nth-child(even) { background: #f8fafc; }\n");
+                fprintf(out, "        tr:nth-child(odd) { background: #ffffff; }\n");
+                fprintf(out, "        tr:hover { background: #e0e7ff; }\n");
+                fprintf(out, "        .positive { color: green; font-weight: bold; }\n");
+                fprintf(out, "        .negative { color: red; font-weight: bold; }\n");
+                fprintf(out, "        .chart-section { margin-top: 30px; }\n");
+                fprintf(out, "        #trendChart, #histChart { width: 100%%; height: 400px; }\n");
+                fprintf(out, "        .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; }\n");
+                fprintf(out, "        .back-link:hover { background: #0056b3; }\n");
+                fprintf(out, "        .filter-buttons { margin-bottom: 15px; }\n");
+                fprintf(out, "        .filter-btn { padding: 6px 12px; margin-right: 8px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; }\n");
+                fprintf(out, "        .filter-btn.active { background: #5c7cfa; color: white; border-color: #5c7cfa; }\n");
+                fprintf(out, "    </style>\n");
+                fprintf(out, "</head>\n");
+                fprintf(out, "<body>\n");
+                fprintf(out, "<div class=\"container\">\n");
+                fprintf(out, "    <a href=\"index.html\" class=\"back-link\">← 返回用户列表</a>\n");
+
+                // ============ 用户卡片（放在最上面，包含统计数据） ============
+                fprintf(out, "    <div class=\"user-card\">\n");
+                fprintf(out, "        <img src=\"%s\" alt=\"Avatar\" class=\"avatar\">\n", stats.titlePhoto);
+                fprintf(out, "        <div class=\"user-info\">\n");
+                
+                char handle_color[16];
+                get_rating_color(stats.rating, handle_color);
+                fprintf(out, "            <h1 style=\"color: %s;\">%s</h1>\n", handle_color, stats.handle);
+                fprintf(out, "            <h2>%s</h2>\n", stats.rank);
+                fprintf(out, "            <p>当前等级分: <strong style=\"color: %s;\">%d</strong></p>\n", handle_color, stats.rating);
+                fprintf(out, "        </div>\n");
+                fprintf(out, "        <div class=\"user-stats\">\n");
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">当前等级分</span><span class=\"stat-value\">%d</span></div>\n", stats.rating);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">最高等级分</span><span class=\"stat-value\">%d</span></div>\n", stats.max_rating);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">总比赛次数</span><span class=\"stat-value\">%d</span></div>\n", total_contests);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">通过题目</span><span class=\"stat-value\">%d</span></div>\n", stats.solved_count);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">补题数量</span><span class=\"stat-value\">%d</span></div>\n", stats.upsolve_count);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">近180天比赛</span><span class=\"stat-value\">%d</span></div>\n", stats.recent_180_count);
+                fprintf(out, "            <div class=\"stat-item\"><span class=\"stat-label\">近180天最高</span><span class=\"stat-value\">%d</span></div>\n", stats.recent_180_max);
+                fprintf(out, "        </div>\n");
+                fprintf(out, "    </div>\n");
+
+                // 等级分趋势折线图
+                fprintf(out, "    <div class=\"chart-section\">\n");
+                fprintf(out, "        <h3>Rating Trend</h3>\n");
+                fprintf(out, "        <div id=\"trendChart\"></div>\n");
+                fprintf(out, "    </div>\n");
+
                 // 比赛历史表格
                 fprintf(out, "    <div class=\"contest-history\">\n");
                 fprintf(out, "        <h3>Contest History</h3>\n");
@@ -335,40 +485,58 @@ int generate_user_summary(const char *handle, FILE *out) {
                 fprintf(out, "            var trendChart = echarts.init(document.getElementById('trendChart'));\n");
                 fprintf(out, "        var dates = [];\n");
                 fprintf(out, "        var ratings = [];\n");
-                if (dates_buffer) fprintf(out, "%s", dates_buffer);
-                if (ratings_buffer) fprintf(out, "%s", ratings_buffer);
-
-                // 图表配置
-                fprintf(out, "        var option = {\n");
-                fprintf(out, "            tooltip: { trigger: 'axis' },\n");
-                fprintf(out, "            grid: { left: '3%%', right: '4%%', bottom: '15%%', containLabel: true },\n");
-                fprintf(out, "            xAxis: {\n");
-                fprintf(out, "                type: 'category',\n");
-                fprintf(out, "                data: dates,\n");
-                fprintf(out, "                axisLabel: { rotate: 45, fontSize: 10 }\n");
-                fprintf(out, "            },\n");
-                fprintf(out, "            yAxis: {\n");
-                fprintf(out, "                type: 'value',\n");
-                fprintf(out, "                name: 'Rating',\n");
-                fprintf(out, "                min: function(value) { return Math.floor(value.min / 100) * 100 - 100; },\n");
-                fprintf(out, "                max: function(value) { return Math.ceil(value.max / 100) * 100 + 100; }\n");
-                fprintf(out, "            },\n");
-                fprintf(out, "            series: [{\n");
-                fprintf(out, "                name: 'Rating',\n");
-                fprintf(out, "                type: 'line',\n");
-                fprintf(out, "                data: ratings,\n");
-                fprintf(out, "                smooth: true,\n");
-                fprintf(out, "                lineStyle: { color: '#5470c6', width: 2 },\n");
-                fprintf(out, "                areaStyle: {\n");
-                fprintf(out, "                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [\n");
-                fprintf(out, "                        { offset: 0, color: 'rgba(84, 112, 198, 0.5)' },\n");
-                fprintf(out, "                        { offset: 1, color: 'rgba(84, 112, 198, 0.1)' }\n");
-                fprintf(out, "                    ])\n");
+                
+                if (dates_buffer && ratings_buffer) {
+                    fprintf(out, "%s", dates_buffer);
+                    fprintf(out, "%s", ratings_buffer);
+                }
+                
+                fprintf(out, "            var option = {\n");
+                fprintf(out, "                title: {\n");
+                fprintf(out, "                    text: 'Rating Trend',\n");
+                fprintf(out, "                    left: 'center'\n");
                 fprintf(out, "                },\n");
-                fprintf(out, "                symbol: 'circle',\n");
-                fprintf(out, "                symbolSize: 4\n");
-                fprintf(out, "            }]\n");
-                fprintf(out, "        };\n");
+                fprintf(out, "                tooltip: {\n");
+                fprintf(out, "                    trigger: 'axis'\n");
+                fprintf(out, "                },\n");
+                fprintf(out, "                legend: {\n");
+                fprintf(out, "                    data:['Rating']\n");
+                fprintf(out, "                },\n");
+                fprintf(out, "                grid: {\n");
+                fprintf(out, "                    left: '3%%',\n");
+                fprintf(out, "                    right: '4%%',\n");
+                fprintf(out, "                    bottom: '3%%',\n");
+                fprintf(out, "                    containLabel: true\n");
+                fprintf(out, "                },\n");
+                fprintf(out, "                xAxis: {\n");
+                fprintf(out, "                    type: 'category',\n");
+                fprintf(out, "                    boundaryGap: false,\n");
+                fprintf(out, "                    data: dates,\n");
+                fprintf(out, "                    axisLabel: {\n");
+                fprintf(out, "                        rotate: 45,\n");
+                fprintf(out, "                        fontSize: 10\n");
+                fprintf(out, "                    }\n");
+                fprintf(out, "                },\n");
+                fprintf(out, "                yAxis: {\n");
+                fprintf(out, "                    type: 'value',\n");
+                fprintf(out, "                    min: function(value) { return Math.floor(value.min / 100) * 100 - 100; },\n");
+                fprintf(out, "                    max: function(value) { return Math.ceil(value.max / 100) * 100 + 100; }\n");
+                fprintf(out, "                },\n");
+                fprintf(out, "                series: [{\n");
+                fprintf(out, "                    name: 'Rating',\n");
+                fprintf(out, "                    type: 'line',\n");
+                fprintf(out, "                    data: ratings,\n");
+                fprintf(out, "                    smooth: true,\n");
+                fprintf(out, "                    areaStyle: {\n");
+                fprintf(out, "                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [\n");
+                fprintf(out, "                            { offset: 0, color: 'rgba(84, 112, 198, 0.3)' },\n");
+                fprintf(out, "                            { offset: 1, color: 'rgba(84, 112, 198, 0.1)' }\n");
+                fprintf(out, "                        ])\n");
+                fprintf(out, "                    },\n");
+                fprintf(out, "                    symbol: 'circle',\n");
+                fprintf(out, "                    symbolSize: 4\n");
+                fprintf(out, "                }]\n");
+                fprintf(out, "            };\n");
                 fprintf(out, "            trendChart.setOption(option);\n");
                 fprintf(out, "        }\n");
                 fprintf(out, "        \n");
@@ -391,18 +559,6 @@ int generate_user_summary(const char *handle, FILE *out) {
     // 释放内存
     if (dates_buffer) free(dates_buffer);
     if (ratings_buffer) free(ratings_buffer);
-
-    // 统计信息
-    fprintf(out, "    <div class=\"contest-stats\">\n");
-    fprintf(out, "        <h3>Statistics</h3>\n");
-    fprintf(out, "        <ul>\n");
-    fprintf(out, "            <li>比赛次数: %d</li>\n", stats.contest_count);
-    fprintf(out, "            <li>最高等级分: %d</li>\n", stats.max_rating);
-    fprintf(out, "            <li>近180天比赛次数: %d</li>\n", stats.recent_180_count);
-    fprintf(out, "            <li>近180天最高等级分: %d</li>\n", stats.recent_180_max);
-    fprintf(out, "        </ul>\n");
-
-    fprintf(out, "    </div>\n");
 
     // 题目难度分布直方图
     fprintf(out, "    <div class=\"chart-section\">\n");
