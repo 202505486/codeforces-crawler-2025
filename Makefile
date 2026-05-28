@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -Wall -Ilib/curl/include -Ilib/cjson/include
+CFLAGS = -Wall -Iku/curl/include -Iku/cjson/include
 LDFLAGS = -lwininet
 
-SRCS = src/cf_summary.c src/cjson.c lib/curl/src/curl.c
+SRCS = code/cf_summary.c code/cJSON.c ku/curl/src/curl.c
 TARGET = cf_summary.exe
 
 all: $(TARGET)
@@ -11,6 +11,6 @@ $(TARGET): $(SRCS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(SRCS) $(LDFLAGS)
 
 clean:
-	del $(TARGET) 2>/dev/null || true
+	del $(TARGET) 2>nul || true
 
 .PHONY: all clean

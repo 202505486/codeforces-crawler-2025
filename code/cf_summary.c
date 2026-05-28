@@ -115,7 +115,9 @@ void get_rating_color(int rating, char *color) {
     else strcpy(color, "#FF0000");
 }
 
-void generate_user_summary(const char *handle, FILE *out) {
+int generate_user_summary(const char *handle, FILE *out) {
+    int success = 0;
+    
     fprintf(out, "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n");
     fprintf(out, "    <meta charset=\"UTF-8\">\n");
     fprintf(out, "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n");
@@ -133,7 +135,7 @@ void generate_user_summary(const char *handle, FILE *out) {
     fprintf(out, "            }\n");
     fprintf(out, "        }\n");
     fprintf(out, "    </script>\n");
-    fprintf(out, "    <script src=\"lib/echarts/echarts.min.js\" onload=\"checkECharts()\" onerror=\"console.log('ECharts loading failed')\"></script>\n");
+    fprintf(out, "    <script src=\"ku/echarts/echarts.min.js\" onload=\"checkECharts()\" onerror=\"console.log('ECharts loading failed')\"></script>\n");
     
     fprintf(out, "    <style>\n");
     fprintf(out, "        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }\n");
@@ -737,6 +739,8 @@ void generate_user_summary(const char *handle, FILE *out) {
     fprintf(out, "</div>\n");
     fprintf(out, "</body>\n");
     fprintf(out, "</html>\n");
+    
+    return success;
 }
 
 void capitalize_string(char *str) {
@@ -960,6 +964,8 @@ int main(int argc, char *argv[]) {
                 }
             }
             fclose(users_f);
+        } else {
+            fprintf(stderr, "Failed to open users file: %s\n", argv[2]);
         }
         
         // 先为其他用户生成页面
@@ -969,13 +975,17 @@ int main(int argc, char *argv[]) {
 
             char user_html_file[256];
             snprintf(user_html_file, sizeof(user_html_file), "%s.html", user_handle);
+            printf("Generating %s...\n", user_handle);
 
             FILE *user_out = fopen(user_html_file, "w");
-            if (user_out) {
-                generate_user_summary(user_handle, user_out);
-                fclose(user_out);
-                printf("Generated %s\n", user_html_file);
+            if (!user_out) {
+                fprintf(stderr, "Failed to create %s\n", user_html_file);
+                continue;
             }
+            
+            generate_user_summary(user_handle, user_out);
+            fclose(user_out);
+            printf("Generated %s\n", user_html_file);
         }
         
         // 最后生成index页面

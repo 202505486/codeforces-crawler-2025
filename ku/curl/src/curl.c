@@ -1,6 +1,6 @@
 #include "curl/curl.h"
 
-#pragma comment(lib, "wininet.lib")
+// #pragma comment(lib, "wininet.lib")  // 已在编译命令中添加 -lwininet
 
 typedef struct {
     char *url;
